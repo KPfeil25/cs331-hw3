@@ -28,18 +28,32 @@ def getWordsAndVocab(filename):
 # check this is working correctly
 def makeFeatures(allSentences, allClassifications, vocab):
     featureMatrix = []
-
+    flag = 0
     for sentence in allSentences:
-        featureVector = []
-        for word in vocab:
-            if word in sentence:
-                featureVector.append(1)
-            else:
-                featureVector.append(0)
-        if allClassifications[allSentences.index(sentence)] == 1:
-            featureVector.append(1)
+        splitSentence = sentence.split(' ')
+        featureVector = [0] * (len(vocab) + 1)
+
+        for word in splitSentence:
+            # check if word is in our sentence
+            if flag == 0: 
+                print(word)
+            if word in vocab:
+                # get index of word
+                index = vocab.index(word)
+                if flag == 0:
+                    print(index)
+                # set the value to 1
+                featureVector[index] = 1
+        # add the classification
+        if allClassifications[allSentences.index(sentence)] == '1':
+            featureVector[-1] = 1
+        else:
+            featureVector[-1] = 0
         featureMatrix.append(featureVector)
+        flag = 1
+    print (len(featureMatrix[0]))
     return featureMatrix
+
 
 def main():
 
@@ -48,12 +62,14 @@ def main():
     # print the length of allSentences
     # print('Length of allSentences:', len(allSentences))
     # print('Length of allClassifications:', len(allClassifications))
-    print (allSentences)
-    print (allClassifications)
-    print (vocab)
+    # print (allSentences)
+    # print (allClassifications)
+    # print (vocab)
 
-    
+    trainingMatrix = makeFeatures(allSentences, allClassifications, vocab)
 
+
+    print(trainingMatrix[1])
 
 if __name__ == '__main__':
     main()
