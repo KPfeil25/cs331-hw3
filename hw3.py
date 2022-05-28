@@ -54,10 +54,43 @@ def makeFeatures(allSentences, allClassifications, vocab):
     print (len(featureMatrix[0]))
     return featureMatrix
 
+def printPreprocessing(vocab, trainingData, testingData):
+    outputTraining = open('trainPreprocessed.txt', 'w')
+    outputTesting = open('testPreprocessed.txt', 'w')
+
+    for word in vocab:
+        outputTraining.write(word + ',')
+        outputTesting.write(word + ',')
+
+    outputTraining.write('classlabel\n')
+    outputTesting.write('classlabel\n')
+
+    # iterate through all elements of training data
+    for i in range(len(trainingData)):
+        for j in range(len(trainingData[i])):
+            # if its the last element, dont print the comma
+            if j == len(trainingData[i]) - 1:
+                outputTraining.write(str(trainingData[i][j]))
+            else:
+                outputTraining.write(str(trainingData[i][j]) + ',')
+        outputTraining.write('\n')
+
+
+    # iterate through all elements of testing data
+    for i in range(len(testingData)):
+        for j in range(len(testingData[i])):
+            # if its the last element, dont print the comma
+            if j == len(testingData[i]) - 1:
+                outputTesting.write(str(testingData[i][j]))
+            else:
+                outputTesting.write(str(testingData[i][j]) + ',')
+        outputTesting.write('\n')
+
 
 def main():
 
-    allSentences, allClassifications, vocab = getWordsAndVocab('trainingSet.txt')
+    trainingSentences, trainingClassifications, vocab = getWordsAndVocab('trainingSet.txt')
+    testingSentences, testingClassifications, doNotUse = getWordsAndVocab('testSet.txt')
 
     # print the length of allSentences
     # print('Length of allSentences:', len(allSentences))
@@ -66,7 +99,13 @@ def main():
     # print (allClassifications)
     # print (vocab)
 
-    trainingMatrix = makeFeatures(allSentences, allClassifications, vocab)
+    trainingMatrix = makeFeatures(trainingSentences, trainingClassifications, vocab)
+
+    testingMatrix = makeFeatures(testingSentences, testingClassifications, vocab)
+
+    printPreprocessing(vocab, trainingMatrix, testingMatrix)
+
+
 
 
     print(trainingMatrix[1])
