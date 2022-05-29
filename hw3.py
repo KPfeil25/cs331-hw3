@@ -28,20 +28,15 @@ def getWordsAndVocab(filename):
 # check this is working correctly
 def makeFeatures(allSentences, allClassifications, vocab):
     featureMatrix = []
-    flag = 0
     for sentence in allSentences:
         splitSentence = sentence.split(' ')
         featureVector = [0] * (len(vocab) + 1)
 
         for word in splitSentence:
-            # check if word is in our sentence
-            if flag == 0: 
-                print(word)
+
             if word in vocab:
                 # get index of word
                 index = vocab.index(word)
-                if flag == 0:
-                    print(index)
                 # set the value to 1
                 featureVector[index] = 1
         # add the classification
@@ -50,8 +45,6 @@ def makeFeatures(allSentences, allClassifications, vocab):
         else:
             featureVector[-1] = 0
         featureMatrix.append(featureVector)
-        flag = 1
-    print (len(featureMatrix[0]))
     return featureMatrix
 
 def printPreprocessing(vocab, trainingData, testingData):
@@ -87,17 +80,121 @@ def printPreprocessing(vocab, trainingData, testingData):
         outputTesting.write('\n')
 
 
+# This function takes in the vocabulary, the training matrix, and the training classifications. It then
+# calculates the probability of a positive review and the probability of a negative review. It then
+# calculates the probability of a word being found in a positive review, the probability of a word
+# being found in a negative review, the probability of a word not being found in a positive review,
+# and the probability of a word not being found in a negative review. It then returns the
+# probabilities for each word and the probabilities for a positive review and a negative review.
+def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
+    positives = 0
+    negatives = 0
+    results = []
+    
+    for i in range(len(trainingClassifications)):
+        if trainingClassifications[i] == '1':
+            positives += 1
+        else:
+            negatives += 1
+
+    probPos = positives/len(trainingClassifications)
+    probNeg = negatives/len(trainingClassifications)
+
+
+    # The below code is calculating the number of times a word is found in a positive review and the
+    # number of times a word is found in a negative review. It is also calculating the number of times a
+    # word is not found in a positive review and the number of times a word is not found in a negative
+    # review.
+    for i in range(len(allVocab)):
+        found_pos = 0
+        found_neg = 0
+
+        notfound_pos = 0
+        notfound_neg = 0
+
+        # Iterating through the training matrix and checking if the word is found in a positive review or a
+        # negative review. It is also checking if the word is not found in a positive review or a negative
+        # review.
+        for row in trainingMatrix:
+            if row[i] == '1':
+                if row[-1] == '1':
+                    found_pos += 1
+                else:
+                    found_neg += 1
+            else:
+                if row[-1] == '1':
+                    notfound_pos += 1
+                else:
+                    notfound_neg += 1
+
+        # all probabilities for a given vocab word based on all sentences
+        probFoundPos = found_pos/positives
+        probFoundNeg = found_neg/negatives
+        probNotFoundPos = notfound_pos/positives
+        probNotFoundNeg = notfound_neg/negatives
+
+        # Creating a list of tuples that contain the probabilities of a word being found in a positive review,
+        # the probabilities of a word being found in a negative review, the probabilities of a word not being
+        # found in a positive review, and the probabilities of a word not being found in a negative review.
+        probabilities = (probFoundPos, probFoundNeg, probNotFoundPos, probNotFoundNeg)
+        results.append(probabilities)
+
+
+    return results, probPos, probNeg
+
+def testing(sentences, trainedVocab, probPos, probNeg, allVocab):
+    result = []
+    print(allVocab)
+
+    # Calculating the probability of a sentence being positive or negative.
+    # Iterating through all the sentences in the training set.
+    # for sentence in sentences:
+    for i in range(len(sentences)):
+        splitSentence = sentences[i].split(' ')
+        realProbPos = probPos
+        # Iterating through the sentence and checking if the word is found
+        for j in range(len(splitSentence)):
+            print(splitSentence[j])
+            if splitSentence[j] in allVocab:
+                if sentences[j] == '1':
+                    print('found pos')
+                    realProbPos *= trainedVocab[i][0]
+                else:
+                    # print(trainedVocab[1])
+                    print('found neg')
+                    realProbPos *= trainedVocab[i][1]
+
+        realProbNeg = probNeg
+        for k in range(splitSentence):
+            if splitSentence[k] in allVocab:
+                # print(sentence[i])
+                if sentences[k] == '1':
+                    print('found pos')
+                    realProbNeg *= trainedVocab[i][2]
+                else:
+                    print('found neg')
+                    realProbNeg *= trainedVocab[i][3]
+
+        # print('realProbPos: ' + str(realProbPos))
+        # print('realProbNeg: ' + str(realProbNeg))
+        result.append(1) if realProbPos > realProbNeg else result.append(0)
+
+    return result
+
+# It takes in two lists of classifications, one for the classifications of the training data and one
+# for the classifications of the test data, and returns the accuracy of the classifier
+def checkAccuracy(classifications, testClassifications):
+    correct = 0
+    for i in range(len(classifications)):
+        if classifications[i] == testClassifications[i]:
+            correct += 1
+    return correct/len(classifications)
+
+
 def main():
 
     trainingSentences, trainingClassifications, vocab = getWordsAndVocab('trainingSet.txt')
     testingSentences, testingClassifications, doNotUse = getWordsAndVocab('testSet.txt')
-
-    # print the length of allSentences
-    # print('Length of allSentences:', len(allSentences))
-    # print('Length of allClassifications:', len(allClassifications))
-    # print (allSentences)
-    # print (allClassifications)
-    # print (vocab)
 
     trainingMatrix = makeFeatures(trainingSentences, trainingClassifications, vocab)
 
@@ -105,10 +202,20 @@ def main():
 
     printPreprocessing(vocab, trainingMatrix, testingMatrix)
 
+    print(trainingSentences)
+
+    trainedVocab, probPos, probNeg = createProbabilities(vocab, trainingMatrix, trainingClassifications)
+
+    trainingClassifications = testing(trainingSentences, trainedVocab, probPos, probNeg, vocab)
+    testClassifications = testing(testingSentences, trainedVocab, probPos, probNeg, vocab)
+
+    # print('Training Classifications: ', trainingClassifications)
+    # print('Test Classifications: ', testClassifications)
+
+    # print('Training Accuracy:', checkAccuracy(trainingClassifications, trainingClassifications))
+    # print('Testing Accuracy:', checkAccuracy(testClassifications, testingClassifications))
 
 
-
-    print(trainingMatrix[1])
 
 if __name__ == '__main__':
     main()
