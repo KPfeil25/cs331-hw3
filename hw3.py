@@ -116,13 +116,13 @@ def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
         # negative review. It is also checking if the word is not found in a positive review or a negative
         # review.
         for row in trainingMatrix:
-            if row[i] == '1':
-                if row[-1] == '1':
+            if row[i] == 1:
+                if row[-1] == 1:
                     found_pos += 1
                 else:
                     found_neg += 1
             else:
-                if row[-1] == '1':
+                if row[-1] == 1:
                     notfound_pos += 1
                 else:
                     notfound_neg += 1
@@ -142,6 +142,7 @@ def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
 
     return results, probPos, probNeg
 
+
 def testing(sentences, trainedVocab, probPos, probNeg, allVocab):
     result = []
     print(allVocab)
@@ -152,27 +153,30 @@ def testing(sentences, trainedVocab, probPos, probNeg, allVocab):
     for i in range(len(sentences)):
         splitSentence = sentences[i].split(' ')
         realProbPos = probPos
+        print(trainedVocab[i])
         # Iterating through the sentence and checking if the word is found
         for j in range(len(splitSentence)):
-            print(splitSentence[j])
+            # print(splitSentence[j])
             if splitSentence[j] in allVocab:
-                if sentences[j] == '1':
-                    print('found pos')
+                # ??????????????????????????????
+                if sentences[j] == 1:
+                    # print('found pos')
                     realProbPos *= trainedVocab[i][0]
                 else:
                     # print(trainedVocab[1])
-                    print('found neg')
+                    # print('found neg')
                     realProbPos *= trainedVocab[i][1]
 
         realProbNeg = probNeg
-        for k in range(splitSentence):
+        for k in range(len(splitSentence)):
             if splitSentence[k] in allVocab:
                 # print(sentence[i])
-                if sentences[k] == '1':
-                    print('found pos')
+                # ??????????????????????????
+                if sentences[k] == 1:
+                    # print('found pos')
                     realProbNeg *= trainedVocab[i][2]
                 else:
-                    print('found neg')
+                    # print('found neg')
                     realProbNeg *= trainedVocab[i][3]
 
         # print('realProbPos: ' + str(realProbPos))
@@ -188,13 +192,15 @@ def checkAccuracy(classifications, testClassifications):
     for i in range(len(classifications)):
         if classifications[i] == testClassifications[i]:
             correct += 1
+    print(correct)
+    print(len(classifications))
     return correct/len(classifications)
 
 
 def main():
 
     trainingSentences, trainingClassifications, vocab = getWordsAndVocab('trainingSet.txt')
-    testingSentences, testingClassifications, doNotUse = getWordsAndVocab('testSet.txt')
+    testingSentences, testingClassifications, _ = getWordsAndVocab('testSet.txt')
 
     trainingMatrix = makeFeatures(trainingSentences, trainingClassifications, vocab)
 
@@ -202,20 +208,18 @@ def main():
 
     printPreprocessing(vocab, trainingMatrix, testingMatrix)
 
-    print(trainingSentences)
+    # print(trainingSentences)
 
     trainedVocab, probPos, probNeg = createProbabilities(vocab, trainingMatrix, trainingClassifications)
 
-    trainingClassifications = testing(trainingSentences, trainedVocab, probPos, probNeg, vocab)
+    trainedClassifications = testing(trainingSentences, trainedVocab, probPos, probNeg, vocab)
     testClassifications = testing(testingSentences, trainedVocab, probPos, probNeg, vocab)
 
     # print('Training Classifications: ', trainingClassifications)
     # print('Test Classifications: ', testClassifications)
 
-    # print('Training Accuracy:', checkAccuracy(trainingClassifications, trainingClassifications))
-    # print('Testing Accuracy:', checkAccuracy(testClassifications, testingClassifications))
-
-
+    print('Training Accuracy:', checkAccuracy(trainedClassifications, trainingClassifications))
+    print('Testing Accuracy:', checkAccuracy(testClassifications, testingClassifications))
 
 if __name__ == '__main__':
     main()
