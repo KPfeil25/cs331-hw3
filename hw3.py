@@ -1,6 +1,7 @@
 import string
 import math
 
+
 def getWordsAndVocab(filename):
     allSentences = []
     allClassifications = []
@@ -26,7 +27,6 @@ def getWordsAndVocab(filename):
 
     return allSentences, allClassifications, vocab
 
-# check this is working correctly
 def makeFeatures(allSentences, allClassifications, vocab):
     featureMatrix = []
     for sentence in allSentences:
@@ -46,7 +46,6 @@ def makeFeatures(allSentences, allClassifications, vocab):
             featureVector[-1] = 0
         featureMatrix.append(featureVector)
 
-    # print("feature matrix", featureMatrix[0])
     return featureMatrix
 
 def printPreprocessing(vocab, trainingData, testingData):
@@ -70,7 +69,6 @@ def printPreprocessing(vocab, trainingData, testingData):
                 outputTraining.write(str(trainingData[i][j]) + ',')
         outputTraining.write('\n')
 
-
     # iterate through all elements of testing data
     for i in range(len(testingData)):
         for j in range(len(testingData[i])):
@@ -92,13 +90,12 @@ def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
     positives = 0
     negatives = 0
     results = []
-    # print(trainingClassifications)
+
     for i in range(len(trainingClassifications)):
         if trainingClassifications[i] == '1':
             positives += 1
         else:
             negatives += 1
-
 
     probPos = positives/len(trainingClassifications)
     probNeg = negatives/len(trainingClassifications)
@@ -131,7 +128,9 @@ def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
                     notfound_neg += 1
 
         # all probabilities for a given vocab word based on all sentences
-        # dirichlet not helping accuracy, not gonna do it
+
+        # dirichlet not helping accuracy, not gonna do it, we account for 0 using log + 0.001
+
         # probFoundPos = (found_pos + 1) / (positives + 2)
         # probFoundNeg = (found_neg + 1) / (negatives + 2)
         # probNotFoundPos = (notfound_pos + 1) / (positives + 2)
@@ -152,11 +151,7 @@ def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
         # found in a positive review, and the probabilities of a word not being found in a negative review.
         probabilities = (probFoundPos, probFoundNeg, probNotFoundPos, probNotFoundNeg)
         results.append(probabilities)
-
-        # print(allVocab[i], probabilities)
-
-
-
+        
     return results, probPos, probNeg
 
 
@@ -165,71 +160,45 @@ def testing(sentences, trainedVocab, probPos, probNeg, allVocab):
 
     for i in range(len(sentences)):
         splitSentence = sentences[i].split(' ')
-
         realProbPos = probPos
         realProbPos = math.log(realProbPos)
         for word in allVocab:
             if word in splitSentence:
-                # if i == 0:
-                #     print("found TT", word, ", ", trainedVocab[i][0])
-                #     print(word)
                 # WORD IS IN SENTENCE AND IT AND WE WANT POSITIVE PROBABILITY (TT)
-
-
                 # get index of current word from allVocab
-
                 index = allVocab.index(word)
-                # print(index)
                 realProbPos += math.log(trainedVocab[index][0] + 0.0001)
             else:
-                # if i == 0:
-                #     print("found FT", word, ", ", trainedVocab[i][2])
-                #     print(word)
                 # WORD IS NOT IN SENTENCE AND WE WANT POSITIVE PROBABILITY (FT)
                 index = allVocab.index(word)
-                # print(index)
                 realProbPos += math.log(trainedVocab[index][2] + 0.0001)
-
-
 
         realProbNeg = probNeg
         realProbNeg = math.log(realProbNeg)
         for word in allVocab:
             if word in splitSentence:
-                # if i == 0:
-                #     print("found TF", word, ", ", trainedVocab[i][1])
-                #     print(word)
                 # WORD IS IN SENTENCE AND WE WANT NEGATIVE PROBABILITY (TF)
-
                 index = allVocab.index(word)
-                # print(index)
                 realProbNeg += math.log(trainedVocab[index][1] + 0.0001)
             else:
-                # if i == 0:
-                #     print("found FF", word, ", " , trainedVocab[i][3])
-                #     print(word)
                 # WORD IS NOT IN SENTENCE AND WE WANT NEGATIVE PROBABILITY (FF)
-
                 index = allVocab.index(word)
-                # print(index)
                 realProbNeg += math.log(trainedVocab[index][3] + 0.0001)
 
-        # print(realProbPos)
-        # print(realProbNeg)
         result.append(1) if realProbPos > realProbNeg else result.append(0)
-    # print ("result: ", len(result))
     return result
 
 # It takes in two lists of classifications, one for the classifications of the training data and one
 # for the classifications of the test data, and returns the accuracy of the classifier
-def checkAccuracy(classifications, testClassifications):
+def checkAccuracy(classifications, testClassifications, getNum):
     correct = 0
     for i in range(len(classifications)):
         if classifications[i] == int(testClassifications[i]):
             correct += 1
-    print(correct)
-    print(len(classifications))
-    return correct/len(classifications)
+    if getNum == True:
+        return correct, len(classifications)
+    else:
+        return correct/len(classifications)
 
 
 def main():
@@ -243,18 +212,30 @@ def main():
 
     printPreprocessing(vocab, trainingMatrix, testingMatrix)
 
-    # print(trainingSentences)
-
     trainedVocab, probPos, probNeg = createProbabilities(vocab, trainingMatrix, trainingClassifications)
 
     trainedClassifications = testing(trainingSentences, trainedVocab, probPos, probNeg, vocab)
     testClassifications = testing(testingSentences, trainedVocab, probPos, probNeg, vocab)
 
-    # print('Training Classifications: ', trainingClassifications)
-    # print('Test Classifications: ', testClassifications)
+    trainingCorrect, trainingLength = checkAccuracy(trainedClassifications, trainingClassifications, True)
+    testingCorrect, testingLength = checkAccuracy(testClassifications, testingClassifications, True)
 
-    print('Training Accuracy:', checkAccuracy(trainedClassifications, trainingClassifications))
-    print('Testing Accuracy:', checkAccuracy(testClassifications, testingClassifications))
+    with open('results.txt', 'w') as resultsFile:
+        resultsFile.write("Our runtime complexity is through the roof so if it doesn't finish immediately thats why! \n")
+        resultsFile.write("We trained on trainingSet.txt and tested on testSet.txt for both instances.\n")
+        resultsFile.write('Training Accuracy: ')
+        resultsFile.write(str(trainingCorrect))
+        resultsFile.write(' out of ')
+        resultsFile.write(str(trainingLength))
+        resultsFile.write('\n')
+        resultsFile.write(str(checkAccuracy(trainedClassifications, trainingClassifications, False)))
+        resultsFile.write('\n')
+        resultsFile.write('Testing Accuracy: ')
+        resultsFile.write(str(testingCorrect))
+        resultsFile.write(' out of ')
+        resultsFile.write(str(testingLength))
+        resultsFile.write('\n')
+        resultsFile.write(str(checkAccuracy(testClassifications, testingClassifications, False)))
 
 if __name__ == '__main__':
     main()

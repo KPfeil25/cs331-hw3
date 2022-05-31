@@ -1,0 +1,6 @@
+Our runtime complexity is through the roof so if it doesn't finish immediately thats why! 
+We trained on trainingSet.txt and tested on testSet.txt for both instances.
+Training Accuracy: 496 out of 499
+0.9939879759519038
+Testing Accuracy: 391 out of 497
+0.7867203219315896
