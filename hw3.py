@@ -1,4 +1,5 @@
 import string
+import math
 
 def getWordsAndVocab(filename):
     allSentences = []
@@ -33,7 +34,6 @@ def makeFeatures(allSentences, allClassifications, vocab):
         featureVector = [0] * (len(vocab) + 1)
 
         for word in splitSentence:
-
             if word in vocab:
                 # get index of word
                 index = vocab.index(word)
@@ -45,6 +45,8 @@ def makeFeatures(allSentences, allClassifications, vocab):
         else:
             featureVector[-1] = 0
         featureMatrix.append(featureVector)
+
+    # print("feature matrix", featureMatrix[0])
     return featureMatrix
 
 def printPreprocessing(vocab, trainingData, testingData):
@@ -90,7 +92,7 @@ def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
     positives = 0
     negatives = 0
     results = []
-    
+    # print(trainingClassifications)
     for i in range(len(trainingClassifications)):
         if trainingClassifications[i] == '1':
             positives += 1
@@ -128,16 +130,18 @@ def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
                     notfound_neg += 1
 
         # all probabilities for a given vocab word based on all sentences
-        probFoundPos = found_pos/positives
-        probFoundNeg = found_neg/negatives
-        probNotFoundPos = notfound_pos/positives
-        probNotFoundNeg = notfound_neg/negatives
+        probFoundPos = (found_pos + 1) / (positives + 2)
+        probFoundNeg = (found_neg + 1) / (negatives + 2)
+        probNotFoundPos = (notfound_pos + 1) / (positives + 2)
+        probNotFoundNeg = (notfound_neg + 1) / (negatives + 2)
 
         # Creating a list of tuples that contain the probabilities of a word being found in a positive review,
         # the probabilities of a word being found in a negative review, the probabilities of a word not being
         # found in a positive review, and the probabilities of a word not being found in a negative review.
         probabilities = (probFoundPos, probFoundNeg, probNotFoundPos, probNotFoundNeg)
         results.append(probabilities)
+        # print(allVocab[i], probabilities)
+
 
 
     return results, probPos, probNeg
@@ -145,7 +149,7 @@ def createProbabilities(allVocab, trainingMatrix, trainingClassifications):
 
 def testing(sentences, trainedVocab, probPos, probNeg, allVocab):
     result = []
-    print(allVocab)
+    # print(allVocab)
 
     # Calculating the probability of a sentence being positive or negative.
     # Iterating through all the sentences in the training set.
@@ -153,36 +157,35 @@ def testing(sentences, trainedVocab, probPos, probNeg, allVocab):
     for i in range(len(sentences)):
         splitSentence = sentences[i].split(' ')
         realProbPos = probPos
-        print(trainedVocab[i])
+        realProbPos = math.log(realProbPos)
+        # print(trainedVocab[i])
         # Iterating through the sentence and checking if the word is found
-        for j in range(len(splitSentence)):
+        for word in allVocab:
             # print(splitSentence[j])
-            if splitSentence[j] in allVocab:
+            if word in splitSentence:
                 # ??????????????????????????????
-                if sentences[j] == 1:
-                    # print('found pos')
-                    realProbPos *= trainedVocab[i][0]
-                else:
-                    # print(trainedVocab[1])
-                    # print('found neg')
-                    realProbPos *= trainedVocab[i][1]
+                # print('found pos')
+                realProbPos += math.log(trainedVocab[i][0])
+            else:
+                # print(trainedVocab[1])
+                # print('found neg')
+                realProbPos += math.log(trainedVocab[i][2])
 
         realProbNeg = probNeg
-        for k in range(len(splitSentence)):
-            if splitSentence[k] in allVocab:
-                # print(sentence[i])
-                # ??????????????????????????
-                if sentences[k] == 1:
-                    # print('found pos')
-                    realProbNeg *= trainedVocab[i][2]
-                else:
-                    # print('found neg')
-                    realProbNeg *= trainedVocab[i][3]
+        realProbNeg = math.log(realProbNeg)
+        for word in allVocab:
+            # print(splitSentence[j])
+            if word in splitSentence:
+                # print('found pos')
+                realProbNeg += math.log(trainedVocab[i][1])
+            else:
+                # print('found neg')
+                realProbNeg += math.log(trainedVocab[i][3])
 
-        # print('realProbPos: ' + str(realProbPos))
-        # print('realProbNeg: ' + str(realProbNeg))
+        # print(realProbPos)
+        # print(realProbNeg)
         result.append(1) if realProbPos > realProbNeg else result.append(0)
-
+        # print (result)
     return result
 
 # It takes in two lists of classifications, one for the classifications of the training data and one
@@ -190,7 +193,7 @@ def testing(sentences, trainedVocab, probPos, probNeg, allVocab):
 def checkAccuracy(classifications, testClassifications):
     correct = 0
     for i in range(len(classifications)):
-        if classifications[i] == testClassifications[i]:
+        if classifications[i] == int(testClassifications[i]):
             correct += 1
     print(correct)
     print(len(classifications))
